@@ -50,14 +50,33 @@ def bikes_by_city(contracts):
         response = requests.get(url)
         if response.status_code == 200:
             stations = response.json()
-            bike_count = sum([station['mainStands']['availabilities']['bikes'] for station in stations])
+            bike_count = sum([station['totalStands']['availabilities']['bikes'] for station in stations])
             bikes_by_city[city_name] = bike_count
 
     # Affichage du classement des villes avec le plus de vélos
     ranked_cities = sorted(bikes_by_city.items(), key=lambda x: x[1], reverse=True)
-    print("Classement des villes avec le plus de vélos :")
+    print("\nClassement des villes avec le plus de vélos :")
     for i, (city, count) in enumerate(ranked_cities):
         print(f"{i + 1}. {city} : {count} vélos")
+
+def self_service_stations(contracts):
+    # Initialisation du dictionnaire pour stocker le nombre de stations par ville
+    stations_by_city = {}
+
+    # Parcourir tous les contrats et compter le nombre de stations pour chaque ville
+    for contract in contracts:
+        city_name = contract['name']
+        url = f"https://api.jcdecaux.com/vls/v3/stations?contract={city_name}&apiKey={api_key}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            stations = response.json()
+            station_count = len(stations)
+            stations_by_city[city_name] = station_count
+
+    # Affichage du nombre de stations de vélos en libre-service pour chaque ville
+    print("\nNombre de stations de vélos en libre-service par ville :")
+    for city, count in stations_by_city.items():
+        print(f"{city} : {count}")
 
 
 if __name__ == '__main__':
@@ -71,6 +90,8 @@ if __name__ == '__main__':
     # Si la réponse est OK (code 200), extraire les informations des stations de vélo
     if response.status_code == 200:
         stations = response.json()
+    else:
+        exit()
 
     # URL de l'API JCDecaux pour réccupérer les informations des contrats
     url = f"https://api.jcdecaux.com/vls/v3/contracts?apiKey={api_key}"
@@ -79,8 +100,10 @@ if __name__ == '__main__':
     # Vérification de la réponse de l'API
     if response.status_code != 200:
         print(f"Erreur lors de la récupération des données ({response.status_code})")
+        exit()
     # Conversion de la réponse en JSON
     contracts = response.json()
 
     electric_vs_mechanic(stations)
     bikes_by_city(contracts)
+    self_service_stations(contracts)
